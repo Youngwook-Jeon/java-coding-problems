@@ -1,4 +1,4 @@
-package com.project.young.chap10.P211_IntroVirtualThread;
+package com.project.young.secondedition.chap10.P211_IntroVirtualThread;
 
 import java.util.concurrent.ThreadFactory;
 import java.util.logging.Logger;

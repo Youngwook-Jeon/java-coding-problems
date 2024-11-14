@@ -1,38 +1,46 @@
-package com.project.young.chap10.P220_IntroStructuredTaskScope;
+package com.project.young.secondedition.chap10.P221_IntroStructuredTaskScopeOnSuccess;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.StructuredTaskScope;
-import java.util.concurrent.StructuredTaskScope.Subtask;
+import java.util.concurrent.StructuredTaskScope.ShutdownOnSuccess;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Logger;
 
 public class Solution {
     private static final Logger logger = Logger.getLogger(Solution.class.getName());
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) throws InterruptedException, ExecutionException {
 
         System.setProperty("java.util.logging.SimpleFormatter.format",
                 "[%1$tT] [%4$-7s] %5$s %n");
 
-        buildTestingTeam();
+        System.out.println(buildTestingTeam());
     }
 
-    public static TestingTeam buildTestingTeam() throws InterruptedException {
-        try (StructuredTaskScope<String> scope = new StructuredTaskScope<>()) {
-            Subtask<String> subtask = scope.fork(() -> fetchTester(1));
-            logger.info(() -> "Waiting for " + subtask.toString() + " to finish ...\n");
+    public static TestingTeam buildTestingTeam() throws InterruptedException, ExecutionException {
+        try (ShutdownOnSuccess<String> scope = new StructuredTaskScope.ShutdownOnSuccess<>()) {
+
+            scope.fork(() -> fetchTester(1));
+            scope.fork(() -> fetchTester(2));
+            scope.fork(() -> fetchTester(3));
+
             scope.join();
-            String result = subtask.get();
-            logger.info(result);
-            return new TestingTeam(result);
+
+            return new TestingTeam(scope.result());
         }
     }
 
     public static String fetchTester(int id) throws IOException, InterruptedException {
         HttpClient client = HttpClient.newHttpClient();
+
+        // intentionally added a delay of 1-5 seconds
+        Thread.sleep(Duration.ofMillis(ThreadLocalRandom.current().nextLong(5000)));
 
         HttpRequest requestGet = HttpRequest.newBuilder()
                 .GET()

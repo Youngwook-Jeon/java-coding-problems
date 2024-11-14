@@ -1,4 +1,4 @@
-package com.project.young.chap05.P108_VectorTerminology;
+package com.project.young.secondedition.P108_VectorTerminology;
 
 import jdk.incubator.vector.*;
 

@@ -1,4 +1,4 @@
-package com.project.young.chap01.P01_TextBlockSqlJsonHtml;
+package com.project.young.secondedition.P01_TextBlockSqlJsonHtml;
 
 public class Solution {
 

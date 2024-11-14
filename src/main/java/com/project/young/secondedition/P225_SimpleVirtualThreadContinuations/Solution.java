@@ -1,4 +1,4 @@
-package com.project.young.chap11.P225_SimpleVirtualThreadContinuations;
+package com.project.young.secondedition.P225_SimpleVirtualThreadContinuations;
 
 import java.util.List;
 import java.util.logging.Logger;

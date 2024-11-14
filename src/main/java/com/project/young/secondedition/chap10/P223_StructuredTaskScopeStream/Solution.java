@@ -1,16 +1,21 @@
-package com.project.young.chap10.P221_IntroStructuredTaskScopeOnSuccess;
+package com.project.young.secondedition.chap10.P223_StructuredTaskScopeStream;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.StructuredTaskScope;
 import java.util.concurrent.StructuredTaskScope.ShutdownOnSuccess;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.StructuredTaskScope.Subtask;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.collectingAndThen;
+import static java.util.stream.Collectors.toList;
 
 public class Solution {
     private static final Logger logger = Logger.getLogger(Solution.class.getName());
@@ -20,27 +25,40 @@ public class Solution {
         System.setProperty("java.util.logging.SimpleFormatter.format",
                 "[%1$tT] [%4$-7s] %5$s %n");
 
-        System.out.println(buildTestingTeam());
+        buildTestingTeam();
     }
 
     public static TestingTeam buildTestingTeam() throws InterruptedException, ExecutionException {
         try (ShutdownOnSuccess<String> scope = new StructuredTaskScope.ShutdownOnSuccess<>()) {
 
-            scope.fork(() -> fetchTester(1));
-            scope.fork(() -> fetchTester(2));
-            scope.fork(() -> fetchTester(3));
+            List<Subtask<String>> subtasks = Stream.of(Integer.MAX_VALUE, 2, 3)
+                    .<Callable<String>>map(id -> () -> fetchTester(id))
+                    .map(scope::fork)
+                    .toList();
 
             scope.join();
 
-            return new TestingTeam(scope.result());
+            List<Throwable> failed = subtasks.stream()
+                    .filter(f -> f.state() == Subtask.State.FAILED)
+                    .map(Subtask::exception)
+                    .toList();
+
+            logger.info(failed.toString());
+
+            TestingTeam result = subtasks.stream()
+                    .filter(f -> f.state() == Subtask.State.SUCCESS)
+                    .map(Subtask::get)
+                    .collect(collectingAndThen(toList(),
+                            list -> new TestingTeam(list.toArray(String[]::new))));
+
+            logger.info(result.toString());
+
+            return result;
         }
     }
 
     public static String fetchTester(int id) throws IOException, InterruptedException {
         HttpClient client = HttpClient.newHttpClient();
-
-        // intentionally added a delay of 1-5 seconds
-        Thread.sleep(Duration.ofMillis(ThreadLocalRandom.current().nextLong(5000)));
 
         HttpRequest requestGet = HttpRequest.newBuilder()
                 .GET()
